@@ -1,59 +1,75 @@
-#ifndef msarray_hpp
-#define msarray_hpp
+// Alex Beer
+// Univeristy of Alaska Fairbanks
+// CS 311 Data Structures and Algorithms
+// September 15th, 2024
+// Creating .hpp for msarray_test.cpp. The goal is to create a "Moderately Smart Array Class" while testing various constructors and operators
 
-#include <cstddef>  
-#include <stdexcept>
-#include <utility>   
+#ifndef MSARRAY_HPP
+#define MSARRAY_HPP
 
-template<typename t>
+#include <cstddef> 
+#include <stdexcept> 
+#include <utility>  
+#include <algorithm>  
 
-class msarray {
+template <typename T>
+class MSArray {
 public:
-    using value_type = t;
+    using value_type = T;
     using size_type = std::size_t;
 
-    // default constructor: 8
-    msarray() : _size(8), _data(new t[8]()) {}
+    // Default constructor
+    MSArray()
+        : _size(8), _data(new T[8]) {}
 
     // 1-parameter constructor
-    explicit msarray(size_type size) : _size(size), _data(new t[size]()) {}
+    explicit MSArray(size_type size)
+        : _size(size), _data(new T[size]) {}
 
     // 2-parameter constructor
-    msarray(size_type size, const t& value) : _size(size), _data(new t[size]) {
-        for (size_type i = 0; i < _size; ++i) {
-            _data[i] = value;
-        }
+    MSArray(size_type size, const T & value)
+        : _size(size), _data(new T[size])
+    {
+        std::fill(_data, _data + _size, value);
     }
 
-    // copy constructor
-    msarray(const msarray& other) : _size(other._size), _data(new t[other._size]) {
-        for (size_type i = 0; i < _size; ++i) {
-            _data[i] = other._data[i];
-        }
+    // Copy constructor
+    MSArray(const MSArray & other)
+        : _size(other._size), _data(new T[other._size])
+    {
+        std::copy(other._data, other._data + other._size, _data);
     }
 
-    // move constructor
-    msarray(msarray&& other) noexcept : _size(other._size), _data(other._data) {
+    // Move constructor
+    MSArray(MSArray && other) noexcept
+        : _size(other._size), _data(other._data)
+    {
         other._size = 0;
         other._data = nullptr;
     }
 
-    // copy assignment
-    msarray& operator=(const msarray& other) {
+    // Destructor
+    ~MSArray()
+    {
+        delete[] _data;
+    }
+
+    // Copy assignment
+    MSArray & operator=(const MSArray & other)
+    {
         if (this != &other) {
-            t* new_data = new t[other._size];
-            for (size_type i = 0; i < other._size; ++i) {
-                new_data[i] = other._data[i];
-            }
+            T * newData = new T[other._size];
+            std::copy(other._data, other._data + other._size, newData);
             delete[] _data;
-            _data = new_data;
             _size = other._size;
+            _data = newData;
         }
         return *this;
     }
 
-    // move assignment
-    msarray& operator=(msarray&& other) noexcept {
+    // Move assignment
+    MSArray & operator=(MSArray && other) noexcept
+    {
         if (this != &other) {
             delete[] _data;
             _size = other._size;
@@ -64,86 +80,96 @@ public:
         return *this;
     }
 
-    // destructor
-    ~msarray() {
-        delete[] _data;
-    }
-
-    // access element with bounds checking
-    t& operator[](size_type index) {
-        if (index >= _size) throw std::out_of_range("index out of bounds");
+    // Bracket operator
+    T & operator[](size_type index)
+    {
+        if (index >= _size) {
+            throw std::out_of_range("Index out of range");
+        }
         return _data[index];
     }
 
-    // access element 
-    const t& operator[](size_type index) const {
-        if (index >= _size) throw std::out_of_range("index out of bounds");
+    // Bracket operator
+    const T & operator[](size_type index) const
+    {
+        if (index >= _size) {
+            throw std::out_of_range("Index out of range");
+        }
         return _data[index];
     }
 
-    // return the size of the array
-    size_type size() const {
+    // Return the size of the array
+    size_type size() const
+    {
         return _size;
     }
 
-    // return pointer to the first 
-    t* begin() {
+    // Return a pointer to the start
+    T * begin()
+    {
         return _data;
     }
 
-    const t* begin() const {
+    // Return a const pointer to the start
+    const T * begin() const
+    {
         return _data;
     }
 
-    // return pointer to one-past the last 
-    t* end() {
+    // Return a pointer to one past the end
+    T * end()
+    {
         return _data + _size;
     }
 
-    const t* end() const {
+    // Return a const pointer to one past the end
+    const T * end() const
+    {
         return _data + _size;
     }
 
-    // equality op
-    bool operator==(const msarray& other) const {
-        if (_size != other._size) return false;
-        for (size_type i = 0; i < _size; ++i) {
-            if (_data[i] != other._data[i]) return false;
-        }
-        return true;
+    // Equality operator
+    bool operator==(const MSArray & other) const
+    {
+        return _size == other._size && std::equal(_data, _data + _size, other._data);
     }
 
-    // inequality op
-    bool operator!=(const msarray& other) const {
+    // Inequality operator
+    bool operator!=(const MSArray & other) const
+    {
         return !(*this == other);
     }
 
-    // less-than op
-    bool operator<(const msarray& other) const {
-        size_type min_size = (_size < other._size) ? _size : other._size;
-        for (size_type i = 0; i < min_size; ++i) {
-            if (_data[i] < other._data[i]) return true;
-            if (_data[i] > other._data[i]) return false;
-        }
-        return _size < other._size;
+    // Lexicographic comparison operator <
+    bool operator<(const MSArray & other) const
+    {
+        return std::lexicographical_compare(_data, _data + _size, other._data, other._data + other._size);
     }
 
-    // other comparison op
-    bool operator<=(const msarray& other) const {
+    // Lexicographic comparison operator <=
+    bool operator<=(const MSArray & other) const
+    {
         return !(other < *this);
     }
 
-    bool operator>(const msarray& other) const {
+    // Lexicographic comparison operator >
+    bool operator>(const MSArray & other) const
+    {
         return other < *this;
     }
 
-    bool operator>=(const msarray& other) const {
+    // Lexicographic comparison operator >=
+    bool operator>=(const MSArray & other) const
+    {
         return !(*this < other);
     }
 
 private:
-    size_type _size;
-    t* _data;
+    size_type _size;  // Size of the array
+    T * _data;        // Pointer to array
 };
 
-#endif 
+#endif  
+
+
+// When Running. We get 1 failed and I couldn't figure it out. 
